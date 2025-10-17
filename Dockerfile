@@ -1,7 +1,8 @@
-# Railway-এর জন্য একটি ভিত্তি ইমেজ
-FROM python:3.9-slim
+# নতুন, স্থিতিশীল বেস ইমেজ: Debian Buster (Debian 10) ভিত্তিক Python ইমেজ
+FROM python:3.9-buster
 
 # প্রয়োজনীয় Linux লাইব্রেরি এবং Headless Chromium ইনস্টল করা
+# Buster-এ apt-get install কমান্ডটি প্যাকেজগুলো সঠিকভাবে খুঁজে পাবে
 RUN apt-get update && apt-get install -y \
     chromium \
     chromium-driver \
