@@ -16,9 +16,14 @@ app = Flask(__name__)
 CORS(app) 
 
 # রেলওয়েতে ChromeDriver এবং Chrome Binary এর পথ
-# Dockerfile এ এই পথ নিশ্চিত করা হয়েছে।
 CHROME_DRIVER_PATH = os.environ.get("CHROMEDRIVER_PATH", "/usr/bin/chromedriver")
 CHROME_BINARY_PATH = os.environ.get("CHROME_BIN", "/usr/bin/chromium")
+
+# *** নতুন: সার্ভার চলছে কিনা, তা নিশ্চিত করার জন্য হেলথচেক রুট ***
+@app.route('/')
+def health_check():
+    return jsonify({"status": "Server Running", "message": "Access /check-facebook-id for API endpoint."}), 200
+
 
 def check_facebook_id(number_to_check):
     """
@@ -27,8 +32,6 @@ def check_facebook_id(number_to_check):
     
     # 1. Chrome Options সেটআপ
     options = Options()
-    
-    # ব্রাউজারের বাইনারি পাথ স্পষ্টভাবে সেট করুন
     options.binary_location = CHROME_BINARY_PATH 
     
     # Docker/Linux এ স্থিতিশীলতার জন্য Headless মোড এবং arguments
@@ -48,13 +51,15 @@ def check_facebook_id(number_to_check):
     try:
         # ChromeDriver Path ব্যবহার করে Service সেটআপ
         service = ChromeService(executable_path=CHROME_DRIVER_PATH)
+        # এখানে options পাস করা হচ্ছে
         driver = webdriver.Chrome(service=service, options=options) 
         
-        # 3. Navigation
+        # 3. Navigation and Scraping Logic... (পূর্বের কোড)
+        # ...
         url = "https://mbasic.facebook.com/login/identify/"
         driver.get(url)
         
-        # 4. Cookie Handling (যদি আসে)
+        # 4. Cookie Handling 
         try:
             WebDriverWait(driver, 5).until(
                 EC.element_to_be_clickable((By.CSS_SELECTOR, 'button[data-testid="cookie-policy-dialog-accept-button"]'))
@@ -86,10 +91,12 @@ def check_facebook_id(number_to_check):
                 return 'id_found'
                 
         except (NoSuchElementException, TimeoutException):
+            print("Selenium: Search element interaction failed or timed out.")
             return 'error_page_structure'
             
     except Exception as e:
-        print(f"--- FATAL SELENIUM ERROR ---: {e}") 
+        # যদি এখানে কোনো ত্রুটি ঘটে, তবে তা Headless Chrome ইনিশিয়ালাইজেশনের ত্রুটি।
+        print(f"--- FATAL SELENIUM INITIALIZATION ERROR ---: {e}") 
         return 'error_general'
         
     finally:
@@ -113,10 +120,9 @@ def check_id_endpoint():
         elif result == 'id_found':
             return jsonify({'status': 'id_found', 'message': 'Account found'})
         else:
-            return jsonify({'status': 'error', 'message': 'An internal issue occurred during the Facebook check.'}), 500
+            # যদি 'error_general' বা 'error_page_structure' আসে, তা 500 ত্রুটি ফিরিয়ে দেবে
+            return jsonify({'status': 'error', 'message': 'Internal Facebook check failed (Selenium error).'}), 500
             
     except Exception as e:
         print(f"Error processing request: {e}")
         return jsonify({'status': 'error', 'message': 'Internal Server Error'}), 500
-        
-# Note: Removed if __name__ == '__main__': block for Gunicorn compatibility.
