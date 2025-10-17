@@ -6,7 +6,7 @@ WORKDIR /app
 
 # 1. লিনাক্স নির্ভরতা (Chromium) ইনস্টল করা
 RUN apt-get update && apt-get install -y \
-    # Chromium Browser এবং Driver
+    # Chromium Browser এবং Driver (সঠিক পাথে ইনস্টল হবে)
     chromium \
     chromium-driver \
     # অন্যান্য প্রয়োজনীয় লাইব্রেরি
@@ -30,7 +30,7 @@ RUN apt-get update && apt-get install -y \
     # ইন্সটলেশন শেষে অপ্রয়োজনীয় ফাইল মুছে ফেলা
     && rm -rf /var/lib/apt/lists/*
 
-# 2. CHROMEDRIVER_PATH এনভায়রনমেন্ট ভেরিয়েবল সেট করুন
+# 2. CHROMEDRIVER_PATH এনভায়রনমেন্ট ভেরিয়েবল সেট করুন (server.py এর জন্য)
 ENV CHROMEDRIVER_PATH /usr/bin/chromedriver
 
 # 3. Python নির্ভরতা ইনস্টল করা
@@ -41,5 +41,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # 5. সার্ভার শুরু করার কমান্ড (Gunicorn ব্যবহার করে)
-# $PORT রেলওয়ে স্বয়ংক্রিয়ভাবে প্রদান করে
 CMD exec gunicorn --bind 0.0.0.0:$PORT --workers 1 server:app
