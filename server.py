@@ -16,8 +16,9 @@ app = Flask(__name__)
 CORS(app) 
 
 # রেলওয়েতে ChromeDriver এবং Chrome Binary এর পথ
-# এই পথগুলো Railway/Docker পরিবেশের জন্য সবচেয়ে সাধারণ এবং আমরা Dockerfile এ নিশ্চিত করেছি।
+# এই পথগুলো Railway/Docker পরিবেশের জন্য সবচেয়ে সাধারণ।
 CHROME_DRIVER_PATH = os.environ.get("CHROMEDRIVER_PATH", "/usr/bin/chromedriver")
+# Chromium বাইনারির জন্য অতিরিক্ত ডিফল্ট পাথ যুক্ত করা হলো 
 CHROME_BINARY_PATH = os.environ.get("CHROME_BIN", "/usr/bin/chromium")
 
 # রুট ইউআরএল-এ হেলথচেক রুট
@@ -53,7 +54,8 @@ def check_facebook_id(number_to_check):
     driver = None
     try:
         # ChromeService ব্যবহার করে স্পষ্টভাবে ড্রাইভারের পাথ সেট করা
-        service = ChromeService(executable_path=CHROME_DRIVER_PATH)
+        # service_timeout 60 সেকেন্ড সেট করা হলো
+        service = ChromeService(executable_path=CHROME_DRIVER_PATH, service_timeout=60)
         driver = webdriver.Chrome(service=service, options=options) 
         
         # 3. Navigation
