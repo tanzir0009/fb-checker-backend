@@ -1,14 +1,14 @@
-# নতুন, স্থিতিশীল বেস ইমেজ: Debian Buster (Debian 10) ভিত্তিক Python ইমেজ
-FROM python:3.9-buster
+# বেস ইমেজ: Debian Bullseye (Debian 11) ভিত্তিক Python ইমেজ
+# এটি Chromium এবং সমস্ত প্রয়োজনীয় নির্ভরতা সমর্থন করে।
+FROM python:3.9-bullseye
 
 # প্রয়োজনীয় Linux লাইব্রেরি এবং Headless Chromium ইনস্টল করা
-# Buster-এ apt-get install কমান্ডটি প্যাকেজগুলো সঠিকভাবে খুঁজে পাবে
 RUN apt-get update && apt-get install -y \
     chromium \
     chromium-driver \
     libnss3 \
     libxss1 \
-    libappindicator1 \
+    libappindicator3-1 \
     libatk1.0-0 \
     libatk-bridge2.0-0 \
     libcairo2 \
@@ -22,8 +22,11 @@ RUN apt-get update && apt-get install -y \
     libexpat1 \
     libfreetype6 \
     libpng16-16 \
-    libjpeg-turbo8 \
+    libjpeg62-turbo \
     && rm -rf /var/lib/apt/lists/*
+
+# ChromeDriver এর পথ সেট করুন
+ENV CHROMEDRIVER_PATH /usr/lib/chromium/chromedriver
 
 # আপনার অ্যাপের ফাইল রাখার ডিরেক্টরি
 WORKDIR /app
