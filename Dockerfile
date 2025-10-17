@@ -29,6 +29,7 @@ RUN apt-get update && apt-get install -y \
 
 # 2. CHROMEDRIVER_PATH এনভায়রনমেন্ট ভেরিয়েবল সেট করুন
 ENV CHROMEDRIVER_PATH /usr/bin/chromedriver
+ENV CHROME_BIN /usr/bin/chromium 
 
 # 3. Python নির্ভরতা ইনস্টল করা
 COPY requirements.txt .
@@ -37,6 +38,5 @@ RUN pip install --no-cache-dir -r requirements.txt
 # 4. আপনার কোড কপি করা
 COPY . .
 
-# 5. সার্ভার শুরু করার চূড়ান্ত কমান্ড (Gunicorn ব্যবহার করে)
-# PORT পরিবেশ ভেরিয়েবল ব্যবহার করে Gunicorn কে Railway এর সাথে সিঙ্ক্রোনাইজ করা হয়েছে।
-CMD ["gunicorn", "--bind", "0.0.0.0:$PORT", "--workers", "1", "server:app"]
+# 5. সার্ভার শুরু করার চূড়ান্ত কমান্ড (Shell form ব্যবহার করে $PORT সমস্যা সমাধান করা হলো)
+CMD gunicorn --bind 0.0.0.0:"$PORT" --workers 1 server:app
