@@ -2,7 +2,7 @@ import os
 import time
 import json
 from flask import Flask, request, jsonify
-from flask_cors import CORS
+from flask_cors import CORS 
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.chrome.options import Options
@@ -12,10 +12,11 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
 
 app = Flask(__name__)
+# CORS নীতি সেট করা
 CORS(app) 
 
 # রেলওয়েতে ChromeDriver এবং Chrome Binary এর পথ
-# Dockerfile-এ আমরা /usr/bin/chromedriver এবং /usr/bin/chromium এ ইনস্টল করেছি।
+# Dockerfile এ এই পথ নিশ্চিত করা হয়েছে।
 CHROME_DRIVER_PATH = os.environ.get("CHROMEDRIVER_PATH", "/usr/bin/chromedriver")
 CHROME_BINARY_PATH = os.environ.get("CHROME_BIN", "/usr/bin/chromium")
 
@@ -27,8 +28,8 @@ def check_facebook_id(number_to_check):
     # 1. Chrome Options সেটআপ
     options = Options()
     
-    # *** 500 Error Fix: ব্রাউজারের বাইনারি পাথ স্পষ্টভাবে সেট করুন ***
-    options.binary_location = CHROME_BINARY_PATH # Chrome Binary এর সঠিক পাথ
+    # ব্রাউজারের বাইনারি পাথ স্পষ্টভাবে সেট করুন
+    options.binary_location = CHROME_BINARY_PATH 
     
     # Docker/Linux এ স্থিতিশীলতার জন্য Headless মোড এবং arguments
     options.add_argument("--headless=new") 
@@ -36,21 +37,17 @@ def check_facebook_id(number_to_check):
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--disable-gpu")
     options.add_argument("--window-size=1920,1080")
-    options.add_argument("--remote-debugging-host=0.0.0.0")
-    options.add_argument("--remote-debugging-port=9222")
     options.add_argument("--log-level=3") 
     options.add_argument("--silent")
     options.add_argument("--disable-browser-side-navigation")
     options.add_argument("--disable-extensions")
     options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
 
-
     # 2. Driver Initialization
     driver = None
     try:
         # ChromeDriver Path ব্যবহার করে Service সেটআপ
         service = ChromeService(executable_path=CHROME_DRIVER_PATH)
-        # এখানে options পাস করা হচ্ছে
         driver = webdriver.Chrome(service=service, options=options) 
         
         # 3. Navigation
@@ -121,7 +118,5 @@ def check_id_endpoint():
     except Exception as e:
         print(f"Error processing request: {e}")
         return jsonify({'status': 'error', 'message': 'Internal Server Error'}), 500
-
-if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))
-    app.run(debug=True, host='0.0.0.0', port=port)
+        
+# Note: Removed if __name__ == '__main__': block for Gunicorn compatibility.
