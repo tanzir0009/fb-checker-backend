@@ -1,11 +1,15 @@
-# বেস ইমেজ: Debian Bullseye (Debian 11) ভিত্তিক Python ইমেজ
-# এটি Chromium এবং সমস্ত প্রয়োজনীয় নির্ভরতা সমর্থন করে।
+# Debian 11 (Bullseye) ভিত্তিক পাইথন ইমেজ ব্যবহার করুন যা Chromium এর নির্ভরতা সমর্থন করে
 FROM python:3.9-bullseye
 
-# প্রয়োজনীয় Linux লাইব্রেরি এবং Headless Chromium ইনস্টল করা
+# আপনার অ্যাপের জন্য একটি ফোল্ডার তৈরি করুন
+WORKDIR /app
+
+# 1. লিনাক্স নির্ভরতা (Chromium) ইনস্টল করা
 RUN apt-get update && apt-get install -y \
+    # Chromium Browser এবং Driver
     chromium \
     chromium-driver \
+    # অন্যান্য প্রয়োজনীয় লাইব্রেরি
     libnss3 \
     libxss1 \
     libappindicator3-1 \
@@ -14,7 +18,7 @@ RUN apt-get update && apt-get install -y \
     libcairo2 \
     libcups2 \
     libgbm1 \
-    libgdk-pixbuf2.0-0 \
+    libgdk-pixbuf-2.0-0 \
     libgtk-3-0 \
     libxkbcommon0 \
     libasound2 \
@@ -23,20 +27,19 @@ RUN apt-get update && apt-get install -y \
     libfreetype6 \
     libpng16-16 \
     libjpeg62-turbo \
+    # ইন্সটলেশন শেষে অপ্রয়োজনীয় ফাইল মুছে ফেলা
     && rm -rf /var/lib/apt/lists/*
 
-# ChromeDriver এর পথ সেট করুন
-ENV CHROMEDRIVER_PATH /usr/lib/chromium/chromedriver
+# 2. CHROMEDRIVER_PATH এনভায়রনমেন্ট ভেরিয়েবল সেট করুন
+ENV CHROMEDRIVER_PATH /usr/bin/chromedriver
 
-# আপনার অ্যাপের ফাইল রাখার ডিরেক্টরি
-WORKDIR /app
-
-# নির্ভরতা ইনস্টল করা
+# 3. Python নির্ভরতা ইনস্টল করা
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# আপনার কোড কপি করা
+# 4. আপনার কোড কপি করা
 COPY . .
 
-# সার্ভার চালানোর কমান্ড (Gunicorn ব্যবহার করে)
+# 5. সার্ভার শুরু করার কমান্ড (Gunicorn ব্যবহার করে)
+# $PORT রেলওয়ে স্বয়ংক্রিয়ভাবে প্রদান করে
 CMD exec gunicorn --bind 0.0.0.0:$PORT --workers 1 server:app
