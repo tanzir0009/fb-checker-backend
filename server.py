@@ -16,12 +16,14 @@ app = Flask(__name__)
 CORS(app) 
 
 # রেলওয়েতে ChromeDriver এবং Chrome Binary এর পথ
+# এই পথগুলো Railway/Docker পরিবেশের জন্য সবচেয়ে সাধারণ এবং আমরা Dockerfile এ নিশ্চিত করেছি।
 CHROME_DRIVER_PATH = os.environ.get("CHROMEDRIVER_PATH", "/usr/bin/chromedriver")
 CHROME_BINARY_PATH = os.environ.get("CHROME_BIN", "/usr/bin/chromium")
 
-# *** নতুন: সার্ভার চলছে কিনা, তা নিশ্চিত করার জন্য হেলথচেক রুট ***
+# রুট ইউআরএল-এ হেলথচেক রুট
 @app.route('/')
 def health_check():
+    # এটি নিশ্চিত করবে যে সার্ভারটি ক্র্যাশ না করে চলছে
     return jsonify({"status": "Server Running", "message": "Access /check-facebook-id for API endpoint."}), 200
 
 
@@ -32,11 +34,12 @@ def check_facebook_id(number_to_check):
     
     # 1. Chrome Options সেটআপ
     options = Options()
+    # ব্রাউজারের বাইনারি পাথ স্পষ্টভাবে সেট করা
     options.binary_location = CHROME_BINARY_PATH 
     
     # Docker/Linux এ স্থিতিশীলতার জন্য Headless মোড এবং arguments
     options.add_argument("--headless=new") 
-    options.add_argument("--no-sandbox") 
+    options.add_argument("--no-sandbox") # Docker এ REQUIRED
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--disable-gpu")
     options.add_argument("--window-size=1920,1080")
@@ -49,18 +52,17 @@ def check_facebook_id(number_to_check):
     # 2. Driver Initialization
     driver = None
     try:
-        # ChromeDriver Path ব্যবহার করে Service সেটআপ
+        # ChromeService ব্যবহার করে স্পষ্টভাবে ড্রাইভারের পাথ সেট করা
         service = ChromeService(executable_path=CHROME_DRIVER_PATH)
-        # এখানে options পাস করা হচ্ছে
         driver = webdriver.Chrome(service=service, options=options) 
         
-        # 3. Navigation and Scraping Logic... (পূর্বের কোড)
-        # ...
+        # 3. Navigation
         url = "https://mbasic.facebook.com/login/identify/"
         driver.get(url)
         
         # 4. Cookie Handling 
         try:
+            # 5 সেকেন্ড অপেক্ষা করা
             WebDriverWait(driver, 5).until(
                 EC.element_to_be_clickable((By.CSS_SELECTOR, 'button[data-testid="cookie-policy-dialog-accept-button"]'))
             ).click()
@@ -69,6 +71,7 @@ def check_facebook_id(number_to_check):
             
         # 5. Phone Number Search
         try:
+            # ইনপুট ফিল্ড খুঁজে বের করা (10 সেকেন্ড অপেক্ষা)
             search_input = WebDriverWait(driver, 10).until(
                 EC.presence_of_element_located((By.ID, "identify_search_text_input"))
             )
@@ -95,7 +98,7 @@ def check_facebook_id(number_to_check):
             return 'error_page_structure'
             
     except Exception as e:
-        # যদি এখানে কোনো ত্রুটি ঘটে, তবে তা Headless Chrome ইনিশিয়ালাইজেশনের ত্রুটি।
+        # Selenium initialization error (likely binary not found)
         print(f"--- FATAL SELENIUM INITIALIZATION ERROR ---: {e}") 
         return 'error_general'
         
@@ -120,8 +123,8 @@ def check_id_endpoint():
         elif result == 'id_found':
             return jsonify({'status': 'id_found', 'message': 'Account found'})
         else:
-            # যদি 'error_general' বা 'error_page_structure' আসে, তা 500 ত্রুটি ফিরিয়ে দেবে
-            return jsonify({'status': 'error', 'message': 'Internal Facebook check failed (Selenium error).'}), 500
+            # 500 ত্রুটি ফিরিয়ে দেবে 
+            return jsonify({'status': 'error', 'message': 'Internal Facebook check failed (Selenium error). Check server logs.'}), 500
             
     except Exception as e:
         print(f"Error processing request: {e}")
