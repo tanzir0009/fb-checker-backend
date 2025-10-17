@@ -38,5 +38,5 @@ RUN pip install --no-cache-dir -r requirements.txt
 # 4. আপনার কোড কপি করা
 COPY . .
 
-# 5. সার্ভার শুরু করার চূড়ান্ত কমান্ড (Shell form ব্যবহার করে $PORT সমস্যা সমাধান করা হলো)
-CMD gunicorn --bind 0.0.0.0:"$PORT" --workers 1 server:app
+# 5. সার্ভার শুরু করার চূড়ান্ত কমান্ড (ENTRYPOINT এবং শেল ফরম্যাট ব্যবহার করে $PORT সমস্যা সমাধান করা হলো)
+ENTRYPOINT gunicorn --bind 0.0.0.0:"$PORT" --workers 1 server:app
