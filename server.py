@@ -12,13 +12,11 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
 
 app = Flask(__name__)
-# CORS নীতি সেট করা
 CORS(app) 
 
-# রেলওয়েতে /usr/bin/chromedriver সাধারণত একটি symlink থাকে।
-# সরাসরি Chromium binary এর পথ ব্যবহার করা আরও নির্ভরযোগ্য।
+# রেলওয়েতে ChromeDriver এবং Chrome Binary এর পথ
+# Dockerfile-এ আমরা /usr/bin/chromedriver এবং /usr/bin/chromium এ ইনস্টল করেছি।
 CHROME_DRIVER_PATH = os.environ.get("CHROMEDRIVER_PATH", "/usr/bin/chromedriver")
-# Chromium Binary এর পথ
 CHROME_BINARY_PATH = os.environ.get("CHROME_BIN", "/usr/bin/chromium")
 
 def check_facebook_id(number_to_check):
@@ -30,17 +28,17 @@ def check_facebook_id(number_to_check):
     options = Options()
     
     # *** 500 Error Fix: ব্রাউজারের বাইনারি পাথ স্পষ্টভাবে সেট করুন ***
-    options.binary_location = CHROME_BINARY_PATH
+    options.binary_location = CHROME_BINARY_PATH # Chrome Binary এর সঠিক পাথ
     
-    # Docker/Linux এ স্থিতিশীলতার জন্য REQUIRED Headless মোড এবং arguments
-    options.add_argument("--headless=new") # নতুন হেডলেস মোড
+    # Docker/Linux এ স্থিতিশীলতার জন্য Headless মোড এবং arguments
+    options.add_argument("--headless=new") 
     options.add_argument("--no-sandbox") 
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--disable-gpu")
-    options.add_argument("--window-size=1920,1080") # বড় রেজোলিউশন
+    options.add_argument("--window-size=1920,1080")
     options.add_argument("--remote-debugging-host=0.0.0.0")
     options.add_argument("--remote-debugging-port=9222")
-    options.add_argument("--log-level=3") # শুধুমাত্র মারাত্মক ত্রুটিগুলো লগ করবে
+    options.add_argument("--log-level=3") 
     options.add_argument("--silent")
     options.add_argument("--disable-browser-side-navigation")
     options.add_argument("--disable-extensions")
@@ -52,13 +50,14 @@ def check_facebook_id(number_to_check):
     try:
         # ChromeDriver Path ব্যবহার করে Service সেটআপ
         service = ChromeService(executable_path=CHROME_DRIVER_PATH)
-        driver = webdriver.Chrome(service=service, options=options)
+        # এখানে options পাস করা হচ্ছে
+        driver = webdriver.Chrome(service=service, options=options) 
         
         # 3. Navigation
         url = "https://mbasic.facebook.com/login/identify/"
         driver.get(url)
         
-        # 4. Cookie Handling (যদি আসে) - কুকি হ্যান্ডলিং কে আরও সহনশীল করা হয়েছে
+        # 4. Cookie Handling (যদি আসে)
         try:
             WebDriverWait(driver, 5).until(
                 EC.element_to_be_clickable((By.CSS_SELECTOR, 'button[data-testid="cookie-policy-dialog-accept-button"]'))
@@ -68,42 +67,35 @@ def check_facebook_id(number_to_check):
             
         # 5. Phone Number Search
         try:
-            # ইনপুট ফিল্ড খুঁজে বের করা (10 সেকেন্ড অপেক্ষা)
             search_input = WebDriverWait(driver, 10).until(
                 EC.presence_of_element_located((By.ID, "identify_search_text_input"))
             )
             search_input.send_keys(number_to_check)
             
-            # সার্চ বাটন ক্লিক করা
             search_button = driver.find_element(By.NAME, "did_submit")
             search_button.click()
             
             # 6. অপেক্ষা ও ফলাফল যাচাই
-            # পেজ লোড হওয়ার জন্য একটু বেশি অপেক্ষা করা হলো
             WebDriverWait(driver, 10).until(
-                EC.url_changes(url) # URL পরিবর্তন হওয়ার জন্য অপেক্ষা করা
+                EC.url_changes(url)
             )
-            time.sleep(2) # অতিরিক্ত নিশ্চিতকরণের জন্য
+            time.sleep(2) 
 
             page_source = driver.page_source
             
-            # ফলাফল যাচাই: বাংলা ও ইংরেজি দুটি মেসেজই চেক করা
             if "doesn't match an account" in page_source or "আপনার দেওয়া তথ্যের সাথে কোনো অ্যাকাউন্ট খুঁজে পাইনি" in page_source:
                 return 'id_not_found'
             else:
                 return 'id_found'
                 
         except (NoSuchElementException, TimeoutException):
-            print("Search element interaction failed or timed out.")
             return 'error_page_structure'
             
     except Exception as e:
-        # কোনো বড় ত্রুটি হলে, এটিকে লগে দেখাবে
         print(f"--- FATAL SELENIUM ERROR ---: {e}") 
         return 'error_general'
         
     finally:
-        # ব্রাউজার বন্ধ করা
         if driver:
             driver.quit()
 
@@ -124,7 +116,6 @@ def check_id_endpoint():
         elif result == 'id_found':
             return jsonify({'status': 'id_found', 'message': 'Account found'})
         else:
-            # যদি 'error_general' বা 'error_page_structure' আসে
             return jsonify({'status': 'error', 'message': 'An internal issue occurred during the Facebook check.'}), 500
             
     except Exception as e:
